@@ -24,11 +24,11 @@ public class TransactionServiceImpl implements TransactionService {
     private final TransactionRepository transactionRepository;
     private final WalletService walletService;
     private final AuthorizerService authorizerService;
-    private final NotificationService notificationService;;
+    private final NotificationService notificationService;
 
     @Override
     @Transactional
-    public Transaction create(Transaction transaction) {
+    public synchronized Transaction create(Transaction transaction) {
         validate(transaction);
 
         // 1. Verifica se a transferência está autorizada
@@ -55,12 +55,6 @@ public class TransactionServiceImpl implements TransactionService {
         return newTransaction;
     }
 
-    /*
-     * A transaction is valid if:
-     * - the payer is a common wallet
-     * - the payer has enough balance
-     * - the payer is not the payee
-     */
     private void validate(Transaction transaction) {
 
         LOGGER.info("validating transaction {}...", transaction);

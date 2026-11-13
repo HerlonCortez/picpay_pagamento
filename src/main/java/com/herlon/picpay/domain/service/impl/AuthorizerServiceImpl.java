@@ -5,12 +5,15 @@ import com.herlon.picpay.domain.entity.Transaction;
 import com.herlon.picpay.domain.exception.UnauthorizedTransactionException;
 import com.herlon.picpay.domain.service.AuthorizerService;
 
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
+@Slf4j
 @Service
 public class AuthorizerServiceImpl implements AuthorizerService {
 
@@ -26,6 +29,10 @@ public class AuthorizerServiceImpl implements AuthorizerService {
     }
 
     @Override
+    @CircuitBreaker(
+            name = "authorize",
+            fallbackMethod = "fallback"
+    )
     public void authorize(Transaction transaction) {
 
         LOGGER.info("authorizing transaction {}...", transaction);
@@ -49,6 +56,14 @@ public class AuthorizerServiceImpl implements AuthorizerService {
                     "Unauthorized!"
             );
         }
+    }
+
+    public void fallback(Transaction transaction, Throwable ex) {
+        log.error("Serviço externo de autorização indisponível", ex);
+
+        throw new RuntimeException(
+                "Serviço de autorização temporariamente indisponível."
+        );
     }
 }
 
